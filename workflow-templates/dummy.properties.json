@@ -1,7 +1,7 @@
 {
   "name": "Dummy test workflow",
-  "description": "We can use github action workflow template",
-  "iconName": "example-icon",
+  "description": "We can use github action workflow template yeah !",
+  "iconName": "dummy-icon",
   "categories": [
     "Java"
   ],
