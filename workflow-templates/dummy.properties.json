@@ -1,0 +1,11 @@
+{
+  "name": "Dummy test workflow",
+  "description": "We can use github action workflow template",
+  "iconName": "example-icon",
+  "categories": [
+    "Java"
+  ],
+  "filePatterns": [
+    "pom.xml$"
+  ]
+}
