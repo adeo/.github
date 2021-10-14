@@ -1,0 +1,67 @@
+name : CI/CD
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+
+env:
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Conventional commit check
+        uses: oknozor/cocogitto-action@v1.1
+        with:
+          check-latest-tag-only: true
+
+      - uses: actions/setup-java@v2
+        name: Setup JDK 16
+        with:
+          distribution: 'adopt'
+          java-version: '16'
+          check-latest: true
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Cache local Maven repository
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - uses: hashicorp/vault-action@v2.1.0
+        name: Get Secrets from Vault
+        id: secrets
+        with:
+          url: ${{ secrets.VAULT_URL }}
+          namespace: ${{ secrets.VAULT_NAMESPACE }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET }}
+          exportToken: true
+          secrets: |
+            secret/data/oaa-core/ci-factory-common JFROG_RW_PASSWORD | JFROG_RW_PASSWORD ;
+            secret/data/oaa-core/ci-factory-common JFROG_RW_USER | JFROG_RW_USER ;
+            secret/data/oaa-core/ci-factory-common JFROG_REPO_DEV | JFROG_REPO_DEV ;
+
+      - name: Build and analyze
+        env:
+        run: mvn ${{ secrets.MAVEN_CLI_OPTS }}
